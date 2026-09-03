@@ -201,7 +201,7 @@ export interface IHerdrTransport {
  * @since 0.8.2
  */
 export class HerdrTransport extends Context.Service<HerdrTransport, IHerdrTransport>()(
-  "@herdr/sdk/HerdrTransport",
+  "@rudironsoni/sdk/HerdrTransport",
 ) {}
 
 const parseHerdrTransportRequestOptions = Schema.decodeEffect(HerdrTransportRequestOptions);
