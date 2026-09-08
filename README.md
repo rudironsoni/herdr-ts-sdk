@@ -1,5 +1,9 @@
 # `@rudironsoni/herdr-ts-sdk`
 
+**Fork notice.** This repository is a fork of [dmmulroy/herdr-ts-sdk](https://github.com/dmmulroy/herdr-ts-sdk). Dillon Mulroy (`dmmulroy`) wrote the SDK and deserves the credit. Use [his repository](https://github.com/dmmulroy/herdr-ts-sdk) for official source and builds.
+
+This fork exists only to prototype Herdr as the terminal multiplexer for Orca, on my Horca fork. It is experimental and is not a supported distribution.
+
 Effect-native TypeScript access to Herdr's local Unix-socket API.
 
 The SDK exposes every Herdr operation as a typed `Effect`, decodes public inputs and wire responses
