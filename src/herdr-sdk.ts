@@ -158,7 +158,9 @@ export interface IHerdrSdk {
  * @category services
  * @since 0.8.2
  */
-export class HerdrSdk extends Context.Service<HerdrSdk, IHerdrSdk>()("@rudironsoni/herdr-ts-sdk/HerdrSdk") {}
+export class HerdrSdk extends Context.Service<HerdrSdk, IHerdrSdk>()(
+  "@rudironsoni/herdr-ts-sdk/HerdrSdk",
+) {}
 
 /**
  * Aggregates exact contextual service values without constructing or proxying them.
