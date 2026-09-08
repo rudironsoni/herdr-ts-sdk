@@ -53,7 +53,7 @@ export function makeHerdrSuccessResponse(request: HerdrTestRequest): SuccessResp
   if (resultType === "pong") {
     return {
       id: request.id,
-      result: { type: "pong", version: "0.8.2", protocol: 21 },
+      result: { type: "pong", version: "0.9.0", protocol: 22 },
     };
   }
 

@@ -9,8 +9,7 @@ const runSuffix = process.pid.toString();
 const multiAgentIdeaLab = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
-  const created = yield* herdr.workspaces.create({
-    cwd: repositoryPath,
+  const created = yield* herdr.workspaces.createInDirectory(repositoryPath, {
     focus: true,
     label: `Idea lab: ${ideaTopic.slice(0, 32)}`,
   });

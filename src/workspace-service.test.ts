@@ -50,7 +50,7 @@ test("workspace service implements every workspace wire operation", (context) =>
               case "ping":
                 return {
                   id: request.id,
-                  result: { type: "pong", version: "0.8.2", protocol: 21 },
+                  result: { type: "pong", version: "0.9.0", protocol: 22 },
                 };
               case "workspace.create":
                 return {
@@ -150,7 +150,7 @@ function withWorkspaceService<A, E>(
     session: Option.none(),
     requestTimeout: HerdrRequestDeadline.make(Duration.seconds(1)),
     application: Option.none(),
-    supportedProtocols: [17, 18, 19, 20, 21],
+    supportedProtocol: 22,
   };
   return effect.pipe(
     Effect.provide(workspaceServiceLayerWithoutDependencies),

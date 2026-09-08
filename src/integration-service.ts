@@ -6,7 +6,7 @@
  * @since 0.8.2
  */
 import { Context, Effect, Layer, Schema } from "effect";
-import { IntegrationChangeResult, type IntegrationTarget } from "./herdr-models.ts";
+import { IntegrationChangeResult, IntegrationTarget } from "./herdr-models.ts";
 import { decodeHerdrWire } from "./herdr-schema-boundary.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import {
@@ -16,6 +16,26 @@ import {
   type HerdrTransportRequestOptionsEncoded,
 } from "./herdr-transport.ts";
 
+/** Installation freshness reported by Herdr, independent of executable availability. @category schemas @since 0.9.0 */
+export const IntegrationState = Schema.Union([
+  Schema.Literal("not_installed").transform("notInstalled"),
+  Schema.Literal("current"),
+  Schema.Literal("outdated"),
+]);
+/** Parsed integration installation state. @category models @since 0.9.0 */
+export type IntegrationState = typeof IntegrationState.Type;
+/** Discovered integration executable and installation state. @category schemas @since 0.9.0 */
+export const IntegrationInfo = Schema.Struct({
+  target: IntegrationTarget,
+  label: Schema.String,
+  command: Schema.String,
+  available: Schema.Boolean,
+  state: IntegrationState,
+});
+/** One integration discovered by the server. @category models @since 0.9.0 */
+export interface IntegrationInfo extends Schema.Schema.Type<typeof IntegrationInfo> {}
+
+const parseIntegrations = Schema.decodeUnknownEffect(Schema.Array(IntegrationInfo));
 const parseIntegrationChangeResult = Schema.decodeUnknownEffect(IntegrationChangeResult);
 
 /**
@@ -25,6 +45,10 @@ const parseIntegrationChangeResult = Schema.decodeUnknownEffect(IntegrationChang
  * @since 0.8.2
  */
 export interface IIntegrationService {
+  /** Lists available executables and integration installation freshness. */
+  readonly list: (
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<readonly IntegrationInfo[], HerdrTransportRequestError>;
   /** Installs one built-in terminal-agent integration. */
   readonly install: (
     target: IntegrationTarget,
@@ -76,6 +100,16 @@ export const makeIntegrationService = Effect.gen(function* () {
   );
 
   return IntegrationService.of({
+    list: defineHerdrOperation("IntegrationService.list", (options = {}) =>
+      Effect.gen(function* () {
+        const response = yield* transport.request("integration.list", {}, options);
+        return yield* decodeHerdrWire(
+          parseIntegrations,
+          response.result.integrations,
+          response.requestId,
+        );
+      }),
+    ),
     install: defineHerdrOperation("IntegrationService.install", (target, options = {}) =>
       change("integration.install", target, options),
     ),

@@ -70,7 +70,7 @@
     "node": ">=20"
   },
   "herdr": {
-    "protocol": 21,
-    "upstreamCommit": "4a3b04f59ba3b7d8a15cea187b23e1e80c343b0c"
+    "protocol": 22,
+    "upstreamCommit": "b99002ac99b09e00b4ca692436cb15a6b0d676f1"
   }
 }

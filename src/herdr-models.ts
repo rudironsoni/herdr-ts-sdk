@@ -114,10 +114,20 @@ export const ServerCapabilities = Schema.Struct({
   detachedServerDaemon: Schema.optionalKey(Schema.Boolean).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(false), { encodingStrategy: "omit" }),
   ),
+  endpointProtocolGeneration: Schema.OptionFromOptionalNullOr(Schema.Natural),
+  surfaceInterest: Schema.optionalKey(Schema.Boolean).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(false), { encodingStrategy: "omit" }),
+  ),
+  healthCheck: Schema.optionalKey(Schema.Boolean).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(false), { encodingStrategy: "omit" }),
+  ),
 }).pipe(
   Schema.encodeKeys({
     liveHandoff: "live_handoff",
     detachedServerDaemon: "detached_server_daemon",
+    endpointProtocolGeneration: "endpoint_protocol_generation",
+    surfaceInterest: "surface_interest",
+    healthCheck: "health_check",
   }),
 );
 
@@ -527,8 +537,7 @@ export interface Agent extends Schema.Schema.Type<typeof Agent> {}
  * @category schemas
  * @since 0.8.2
  */
-export const WorkspaceCreateInput = Schema.Struct({
-  cwd: Schema.OptionFromOptionalKey(HerdrAbsolutePath),
+export const WorkspaceCreateOptions = Schema.Struct({
   focus: Schema.OptionFromOptionalKey(Schema.Boolean),
   label: Schema.OptionFromOptionalKey(Schema.String),
   env: Schema.OptionFromOptionalKey(HerdrEnvironment),
@@ -540,7 +549,7 @@ export const WorkspaceCreateInput = Schema.Struct({
  * @category models
  * @since 0.8.2
  */
-export interface WorkspaceCreateInput extends Schema.Schema.Type<typeof WorkspaceCreateInput> {}
+export interface WorkspaceCreateOptions extends Schema.Schema.Type<typeof WorkspaceCreateOptions> {}
 
 /**
  * Ergonomic external representation accepted by workspace creation.
@@ -548,8 +557,8 @@ export interface WorkspaceCreateInput extends Schema.Schema.Type<typeof Workspac
  * @category models
  * @since 0.8.2
  */
-export interface WorkspaceCreateInputEncoded extends Schema.Codec.Encoded<
-  typeof WorkspaceCreateInput
+export interface WorkspaceCreateOptionsEncoded extends Schema.Codec.Encoded<
+  typeof WorkspaceCreateOptions
 > {}
 
 /**

@@ -48,6 +48,33 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
           const agentName = herdr.ids.agentName("agent-1");
           const fixturePath = herdr.ids.absolutePath("/tmp/herdr-sdk-fixture");
 
+          const commandId = herdr.ids.command("cmd_fixture");
+          yield* herdr.commands.invoke(commandId);
+          yield* herdr.commands.invokeInWorkspace(commandId, workspaceId);
+          yield* herdr.commands.invokeInTab(commandId, tabId);
+          yield* herdr.commands.invokeInPane(commandId, paneId);
+          yield* herdr.productAnnouncements.dismiss({ version: "0.9.0", id: "announcement" });
+          yield* herdr.releaseNotes.dismiss({ version: "0.9.0" });
+          yield* herdr.integrations.list();
+          yield* herdr.panes.scroll(paneId, { offsetFromBottom: 0 });
+          yield* herdr.panes.editScrollback(paneId);
+          yield* herdr.panes.selection.read(paneId, {
+            anchor: { row: 0, col: 0 },
+            cursor: { row: 1, col: 1 },
+          });
+          yield* herdr.panes.copyMotion(paneId, {
+            cursor: { row: 0, col: 0 },
+            motion: "nextWordStart",
+          });
+          yield* herdr.panes.copySearch(paneId, {
+            query: "error",
+            direction: "forward",
+            cursor: { row: 0, col: 0 },
+            contentRevision: 0,
+          });
+          yield* herdr.panes.link.activate(paneId, { viewportRow: 0, col: 0 });
+          yield* herdr.workspaces.create();
+          yield* herdr.workspaces.createFromWorkspace(workspaceId);
           yield* herdr.server.stop();
           yield* herdr.server.liveHandoff({ importExe: fixturePath });
           yield* herdr.server.reloadConfig();
@@ -59,7 +86,7 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
           yield* herdr.client.windowTitle.set("fixture");
           yield* herdr.client.windowTitle.clear();
 
-          yield* herdr.workspaces.create({ cwd: fixturePath });
+          yield* herdr.workspaces.createInDirectory(fixturePath);
           yield* herdr.workspaces.list();
           yield* herdr.workspaces.get(workspaceId);
           yield* herdr.workspaces.focus(workspaceId);
@@ -221,7 +248,12 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
         );
 
         const observedMethods = new Set(server.requests.map((request) => request.method));
-        expect([...observedMethods].sort()).toEqual(Object.keys(wireResultTypesByMethod).sort());
+        // Surface interest is connection-local and cannot be exercised on the JSON socket.
+        expect([...observedMethods].sort()).toEqual(
+          Object.keys(wireResultTypesByMethod)
+            .filter((method) => method !== "client_shell.surface.set")
+            .sort(),
+        );
         const notification = server.requests.find(
           (request) => request.method === "notification.show",
         );

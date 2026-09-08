@@ -10,7 +10,21 @@ import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json"
 import type { ErrorResponse } from "./generated/wire-error-response.ts";
 import type { EventEnvelope } from "./generated/wire-event.ts";
 import type { SubscriptionEventEnvelope } from "./generated/wire-subscription-event.ts";
-import type { SuccessResponse } from "./generated/wire-success-response.ts";
+import type { SuccessResponse, ResponseResult } from "./generated/wire-success-response.ts";
+import {
+  wireResultTypesByMethod,
+  type WireMethod,
+  type WireMethodMap,
+} from "./generated/wire-method-map.ts";
+
+/** Narrows a schema-validated result using the exhaustively generated method contract. @category decoding @since 0.9.0 */
+export function isExpectedWireResult<Method extends WireMethod>(
+  method: Method,
+  result: ResponseResult,
+): result is WireMethodMap[Method]["result"] {
+  const acceptedTypes: readonly string[] = wireResultTypesByMethod[method];
+  return acceptedTypes.includes(result.type);
+}
 
 const SCHEMA_ID = "https://herdr.dev/herdr-api.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: false, validateFormats: false });

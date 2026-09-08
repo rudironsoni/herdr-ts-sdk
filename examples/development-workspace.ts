@@ -5,8 +5,7 @@ import { runHerdrExample } from "./example-runtime.ts";
 const developmentWorkspace = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
-  const created = yield* herdr.workspaces.create({
-    cwd: repositoryPath,
+  const created = yield* herdr.workspaces.createInDirectory(repositoryPath, {
     focus: true,
     label: "SDK development",
   });

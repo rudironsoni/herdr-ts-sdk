@@ -51,6 +51,10 @@ export interface WireMethodMap {
     readonly params: Extract<Request, { readonly method: "agent.wait" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "agent_info" }>;
   };
+  readonly "client_shell.surface.set": {
+    readonly params: Extract<Request, { readonly method: "client_shell.surface.set" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "client_shell_surface_set" }>;
+  };
   readonly "client.window_title.clear": {
     readonly params: Extract<Request, { readonly method: "client.window_title.clear" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "client_window_title" }>;
@@ -58,6 +62,10 @@ export interface WireMethodMap {
   readonly "client.window_title.set": {
     readonly params: Extract<Request, { readonly method: "client.window_title.set" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "client_window_title" }>;
+  };
+  readonly "command.invoke": {
+    readonly params: Extract<Request, { readonly method: "command.invoke" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
   };
   readonly "events.subscribe": {
     readonly params: Extract<Request, { readonly method: "events.subscribe" }>["params"];
@@ -70,6 +78,10 @@ export interface WireMethodMap {
   readonly "integration.install": {
     readonly params: Extract<Request, { readonly method: "integration.install" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "integration_install" }>;
+  };
+  readonly "integration.list": {
+    readonly params: Extract<Request, { readonly method: "integration.list" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "integration_list" }>;
   };
   readonly "integration.uninstall": {
     readonly params: Extract<Request, { readonly method: "integration.uninstall" }>["params"];
@@ -99,6 +111,14 @@ export interface WireMethodMap {
     readonly params: Extract<Request, { readonly method: "pane.close" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
   };
+  readonly "pane.copy_motion": {
+    readonly params: Extract<Request, { readonly method: "pane.copy_motion" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "pane_copy_motion" }>;
+  };
+  readonly "pane.copy_search": {
+    readonly params: Extract<Request, { readonly method: "pane.copy_search" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "pane_copy_search" }>;
+  };
   readonly "pane.current": {
     readonly params: Extract<Request, { readonly method: "pane.current" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "pane_current" }>;
@@ -106,6 +126,10 @@ export interface WireMethodMap {
   readonly "pane.edges": {
     readonly params: Extract<Request, { readonly method: "pane.edges" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "pane_edges" }>;
+  };
+  readonly "pane.edit_scrollback": {
+    readonly params: Extract<Request, { readonly method: "pane.edit_scrollback" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
   };
   readonly "pane.focus": {
     readonly params: Extract<Request, { readonly method: "pane.focus" }>["params"];
@@ -146,6 +170,10 @@ export interface WireMethodMap {
   readonly "pane.layout": {
     readonly params: Extract<Request, { readonly method: "pane.layout" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "pane_layout" }>;
+  };
+  readonly "pane.link.activate": {
+    readonly params: Extract<Request, { readonly method: "pane.link.activate" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "pane_link_activated" }>;
   };
   readonly "pane.list": {
     readonly params: Extract<Request, { readonly method: "pane.list" }>["params"];
@@ -190,6 +218,14 @@ export interface WireMethodMap {
   readonly "pane.resize": {
     readonly params: Extract<Request, { readonly method: "pane.resize" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "pane_resize" }>;
+  };
+  readonly "pane.scroll": {
+    readonly params: Extract<Request, { readonly method: "pane.scroll" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "pane_info" }>;
+  };
+  readonly "pane.selection.read": {
+    readonly params: Extract<Request, { readonly method: "pane.selection.read" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "pane_selection" }>;
   };
   readonly "pane.send_input": {
     readonly params: Extract<Request, { readonly method: "pane.send_input" }>["params"];
@@ -269,6 +305,17 @@ export interface WireMethodMap {
   };
   readonly "popup.close": {
     readonly params: Extract<Request, { readonly method: "popup.close" }>["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
+  };
+  readonly "product_announcement.dismiss": {
+    readonly params: Extract<
+      Request,
+      { readonly method: "product_announcement.dismiss" }
+    >["params"];
+    readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
+  };
+  readonly "release_notes.dismiss": {
+    readonly params: Extract<Request, { readonly method: "release_notes.dismiss" }>["params"];
     readonly result: Extract<ResponseResult, { readonly type: "ok" }>;
   };
   readonly "server.agent_manifests": {
@@ -397,11 +444,14 @@ export const wireResultTypesByMethod = {
   "agent.view.clear": ["agent_view"],
   "agent.view.set": ["agent_view"],
   "agent.wait": ["agent_info"],
+  "client_shell.surface.set": ["client_shell_surface_set"],
   "client.window_title.clear": ["client_window_title"],
   "client.window_title.set": ["client_window_title"],
+  "command.invoke": ["ok"],
   "events.subscribe": ["subscription_started"],
   "events.wait": ["wait_matched"],
   "integration.install": ["integration_install"],
+  "integration.list": ["integration_list"],
   "integration.uninstall": ["integration_uninstall"],
   "layout.apply": ["layout_apply"],
   "layout.export": ["layout_export"],
@@ -409,8 +459,11 @@ export const wireResultTypesByMethod = {
   "notification.show": ["notification_show"],
   "pane.clear_agent_authority": ["ok"],
   "pane.close": ["ok"],
+  "pane.copy_motion": ["pane_copy_motion"],
+  "pane.copy_search": ["pane_copy_search"],
   "pane.current": ["pane_current"],
   "pane.edges": ["pane_edges"],
+  "pane.edit_scrollback": ["ok"],
   "pane.focus": ["pane_info"],
   "pane.focus_direction": ["pane_focus_direction"],
   "pane.get": ["pane_info"],
@@ -420,6 +473,7 @@ export const wireResultTypesByMethod = {
   "pane.graphics.stream": ["ok"],
   "pane.input.set": ["ok"],
   "pane.layout": ["pane_layout"],
+  "pane.link.activate": ["pane_link_activated"],
   "pane.list": ["pane_list"],
   "pane.move": ["pane_move"],
   "pane.neighbor": ["pane_neighbor"],
@@ -431,6 +485,8 @@ export const wireResultTypesByMethod = {
   "pane.report_agent_session": ["ok"],
   "pane.report_metadata": ["ok"],
   "pane.resize": ["pane_resize"],
+  "pane.scroll": ["pane_info"],
+  "pane.selection.read": ["pane_selection"],
   "pane.send_input": ["ok"],
   "pane.send_keys": ["ok"],
   "pane.send_text": ["ok"],
@@ -451,6 +507,8 @@ export const wireResultTypesByMethod = {
   "plugin.pane.open": ["plugin_pane_opened", "ok"],
   "plugin.unlink": ["plugin_unlinked"],
   "popup.close": ["ok"],
+  "product_announcement.dismiss": ["ok"],
+  "release_notes.dismiss": ["ok"],
   "server.agent_manifests": ["agent_manifest_status"],
   "server.live_handoff": ["ok"],
   "server.reload_agent_manifests": ["agent_manifest_reload"],

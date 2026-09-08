@@ -7,6 +7,26 @@
  */
 import { Context, Effect, Layer } from "effect";
 import {
+  ClientShellService,
+  type IClientShellService,
+  clientShellServiceLayerWithoutDependencies,
+} from "./client-shell-service.ts";
+import {
+  CommandService,
+  type ICommandService,
+  commandServiceLayerWithoutDependencies,
+} from "./command-service.ts";
+import {
+  ProductAnnouncementService,
+  type IProductAnnouncementService,
+  productAnnouncementServiceLayerWithoutDependencies,
+} from "./product-announcement-service.ts";
+import {
+  ReleaseNotesService,
+  type IReleaseNotesService,
+  releaseNotesServiceLayerWithoutDependencies,
+} from "./release-notes-service.ts";
+import {
   AgentService,
   type IAgentService,
   agentServiceLayerWithoutDependencies,
@@ -90,6 +110,14 @@ import {
  * @since 0.8.2
  */
 export interface IHerdrSdk {
+  /** Callback-owned client-shell endpoint sessions; no connection is opened at SDK construction. */
+  readonly clientShell: IClientShellService;
+  /** Executes opaque custom commands with explicit target intent. */
+  readonly commands: ICommandService;
+  /** Dismisses current endpoint announcements. */
+  readonly productAnnouncements: IProductAnnouncementService;
+  /** Marks current endpoint release notes seen. */
+  readonly releaseNotes: IReleaseNotesService;
   /** Immutable configuration snapshot shared by the full SDK graph. */
   readonly config: IHerdrConfig;
   /** Pure schema-owned identifier constructors. */
@@ -140,6 +168,10 @@ export class HerdrSdk extends Context.Service<HerdrSdk, IHerdrSdk>()("@rudironso
  */
 export const makeHerdrSdk = Effect.gen(function* () {
   const config = yield* HerdrConfig;
+  const clientShell = yield* ClientShellService;
+  const commands = yield* CommandService;
+  const productAnnouncements = yield* ProductAnnouncementService;
+  const releaseNotes = yield* ReleaseNotesService;
   const server = yield* ServerService;
   const session = yield* SessionService;
   const notifications = yield* NotificationService;
@@ -157,6 +189,10 @@ export const makeHerdrSdk = Effect.gen(function* () {
 
   return HerdrSdk.of({
     config,
+    clientShell,
+    commands,
+    productAnnouncements,
+    releaseNotes,
     ids: herdrIds,
     server,
     session,
@@ -184,6 +220,10 @@ export const makeHerdrSdk = Effect.gen(function* () {
 export const herdrSdkLayerWithoutDependencies = Layer.effect(HerdrSdk, makeHerdrSdk);
 
 const herdrNamespaceServicesLayerWithoutDependencies = Layer.mergeAll(
+  clientShellServiceLayerWithoutDependencies,
+  commandServiceLayerWithoutDependencies,
+  productAnnouncementServiceLayerWithoutDependencies,
+  releaseNotesServiceLayerWithoutDependencies,
   serverServiceLayerWithoutDependencies,
   sessionServiceLayerWithoutDependencies,
   notificationServiceLayerWithoutDependencies,

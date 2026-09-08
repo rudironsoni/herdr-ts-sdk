@@ -1,4 +1,4 @@
-# Working on @herdr/sdk
+# Working on @rudironsoni/herdr-ts-sdk
 
 ## Start here
 

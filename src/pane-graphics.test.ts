@@ -25,6 +25,64 @@ const GraphicsFileFrameHeader = Schema.Struct({
 });
 const parseGraphicsFileFrameHeader = Schema.decodeUnknownOption(GraphicsFileFrameHeader);
 
+test.for(["success", "failure", "interruption"] as const)(
+  "callback graphics writers close on %s",
+  (mode, context) =>
+    runHerdrTest(
+      context,
+      Effect.scoped(
+        Effect.gen(function* () {
+          const server = yield* startHerdrTestServer((request) =>
+            Effect.succeed(makeHerdrSuccessResponse(request)),
+          );
+          yield* provideHerdrTestSdk(
+            server.socketPath,
+            Effect.gen(function* () {
+              const sdk = yield* HerdrSdk;
+              const pane = sdk.ids.pane("pane-1");
+              if (mode === "success") {
+                const escaped = yield* sdk.panes.graphics.withStream(pane, (writer) =>
+                  Effect.succeed(writer),
+                );
+                expect(
+                  yield* escaped
+                    .write({
+                      format: "rgba",
+                      imageWidth: 1,
+                      imageHeight: 1,
+                      data: Uint8Array.of(0, 0, 0, 255),
+                    })
+                    .pipe(Effect.flip),
+                ).toBeInstanceOf(HerdrGraphicsStreamClosed);
+              } else if (mode === "failure") {
+                expect(
+                  yield* sdk.panes.graphics
+                    .withLayerStream(pane, { layerId: "fixture" }, () =>
+                      Effect.fail("callback-failure"),
+                    )
+                    .pipe(Effect.flip),
+                ).toBe("callback-failure");
+              } else {
+                const entered = yield* Deferred.make<void>();
+                const fiber = yield* sdk.panes.graphics
+                  .withStream(pane, () =>
+                    Effect.gen(function* () {
+                      yield* Deferred.succeed(entered, undefined);
+                      return yield* Effect.never;
+                    }),
+                  )
+                  .pipe(Effect.forkScoped);
+                yield* Deferred.await(entered);
+                yield* Fiber.interrupt(fiber);
+              }
+              yield* server.waitFor("close", server.requests.length);
+            }).pipe(Effect.scoped),
+          );
+        }),
+      ),
+    ),
+);
+
 test("graphics frames enforce mode-specific limits before socket writes", (context) =>
   runHerdrTest(
     context,

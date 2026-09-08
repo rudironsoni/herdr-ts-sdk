@@ -17,26 +17,7 @@ import {
 import { HerdrConfigurationError } from "./herdr-errors.ts";
 
 const DEFAULT_REQUEST_TIMEOUT = Duration.seconds(5);
-
-/**
- * Wire protocol versions accepted during the Herdr compatibility handshake.
- *
- * @category constants
- * @since 0.8.2
- */
-export const SUPPORTED_HERDR_PROTOCOLS = [17, 18, 19, 20, 21] as const;
-
-/**
- * Narrows a number to a supported Herdr wire protocol version.
- *
- * @category guards
- * @since 0.8.2
- */
-export function isSupportedHerdrProtocol(
-  protocol: number,
-): protocol is (typeof SUPPORTED_HERDR_PROTOCOLS)[number] {
-  return (SUPPORTED_HERDR_PROTOCOLS as readonly number[]).includes(protocol);
-}
+const SUPPORTED_HERDR_PROTOCOL = 22 as const;
 
 /**
  * Finite, non-negative deadline for ordinary Herdr transport requests.
@@ -85,7 +66,7 @@ export interface HerdrApplication extends Schema.Schema.Type<typeof HerdrApplica
  * @category schemas
  * @since 0.8.2
  */
-export const HerdrProtocolVersion = Schema.Literals(SUPPORTED_HERDR_PROTOCOLS);
+export const HerdrProtocolVersion = Schema.Literal(SUPPORTED_HERDR_PROTOCOL);
 
 /**
  * Supported Herdr wire protocol version.
@@ -146,8 +127,8 @@ export interface IHerdrConfig {
   readonly requestTimeout: HerdrRequestDeadline;
   /** Optional application identity included in the compatibility handshake. */
   readonly application: Option.Option<HerdrApplication>;
-  /** Wire protocols this SDK accepts at handshake. */
-  readonly supportedProtocols: typeof SUPPORTED_HERDR_PROTOCOLS;
+  /** Herdr protocol version accepted by this SDK build. */
+  readonly supportedProtocol: HerdrProtocolVersion;
 }
 
 /**
@@ -260,7 +241,7 @@ function resolveHerdrConfig(
       ...selection,
       requestTimeout,
       application: Option.fromNullishOr(options.application),
-      supportedProtocols: SUPPORTED_HERDR_PROTOCOLS,
+      supportedProtocol: SUPPORTED_HERDR_PROTOCOL,
     };
   });
 }

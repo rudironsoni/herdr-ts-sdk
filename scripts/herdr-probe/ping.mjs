@@ -38,7 +38,7 @@ try {
       ? {
           _tag: error._tag,
           actualProtocol: error.actualProtocol,
-          supportedProtocols: error.supportedProtocols,
+          supportedProtocol: error.supportedProtocol,
         }
       : { _tag: "unknown", message: String(error) };
   console.log(JSON.stringify(failure));

@@ -88,6 +88,7 @@ import {
   PaneZoomResult,
 } from "./herdr-models.ts";
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
+import { makePaneInteraction, type IPaneInteraction } from "./pane-interaction.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import {
   encodePaneGraphicsPlacement,
@@ -236,7 +237,20 @@ export interface IPaneGraphics {
     input?: PaneGraphicsLayerInputEncoded,
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<void, HerdrTransportRequestError>;
-  /** Acquires a scoped multi-frame graphics writer. */
+  /** Owns a graphics writer for the callback; closes on success, failure, and interruption. */
+  readonly withStream: <A, E, R>(
+    id: PaneId,
+    use: (writer: PaneGraphicsWriter) => Effect.Effect<A, E, R>,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<A, E | HerdrTransportRequestError, R>;
+  /** Owns a named-layer writer for the callback; no explicit caller Scope is needed. */
+  readonly withLayerStream: <A, E, R>(
+    id: PaneId,
+    input: PaneGraphicsStreamInputEncoded,
+    use: (writer: PaneGraphicsWriter) => Effect.Effect<A, E, R>,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<A, E | HerdrTransportRequestError, R>;
+  /** Acquires a scoped multi-frame graphics writer for advanced resource composition. */
   readonly openStream: (
     id: PaneId,
     options?: HerdrTransportRequestOptionsEncoded,
@@ -255,7 +269,7 @@ export interface IPaneGraphics {
  * @category services
  * @since 0.8.2
  */
-export interface IPaneService {
+export interface IPaneService extends IPaneInteraction {
   /** Nested pane graphics operations. */
   readonly graphics: IPaneGraphics;
   /** Splits a pane or the focused pane. */
@@ -450,6 +464,20 @@ export const makePaneService = Effect.gen(function* () {
   );
 
   const graphics: IPaneGraphics = {
+    withStream: (id, use, options = {}) =>
+      Effect.scoped(
+        Effect.gen(function* () {
+          const writer = yield* graphics.openStream(id, options);
+          return yield* use(writer);
+        }),
+      ),
+    withLayerStream: (id, input, use, options = {}) =>
+      Effect.scoped(
+        Effect.gen(function* () {
+          const writer = yield* graphics.openLayerStream(id, input, options);
+          return yield* use(writer);
+        }),
+      ),
     info: defineHerdrOperation("PaneService.graphics.info", (id, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("pane.graphics.info", { paneId: id }, options);
@@ -522,6 +550,7 @@ export const makePaneService = Effect.gen(function* () {
   };
 
   return PaneService.of({
+    ...makePaneInteraction(transport),
     graphics,
     split: defineHerdrOperation("PaneService.split", (targetPaneId, input, options = {}) =>
       Effect.gen(function* () {

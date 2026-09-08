@@ -613,6 +613,11 @@ export type HerdrPopupSize = typeof HerdrPopupSize.Type;
  */
 export const parseHerdrPopupSize = Schema.decodeUnknownEffect(HerdrPopupSize);
 
+/** Opaque endpoint-issued custom command identifier; never command text. @category schemas @since 0.9.0 */
+export const HerdrCommandId = NonEmptyHerdrIdentifier.pipe(Schema.brand("HerdrCommandId"));
+/** Parsed custom command identifier. @category models @since 0.9.0 */
+export type HerdrCommandId = typeof HerdrCommandId.Type;
+
 /**
  * Pure schema-owned helpers for constructing branded Herdr identifiers and paths.
  *
@@ -620,6 +625,8 @@ export const parseHerdrPopupSize = Schema.decodeUnknownEffect(HerdrPopupSize);
  * @since 0.8.2
  */
 export interface IHerdrIds {
+  /** Constructs an opaque endpoint-issued custom command identifier. */
+  readonly command: (value: string) => HerdrCommandId;
   /** Constructs a non-empty workspace identifier. */
   readonly workspace: (value: string) => WorkspaceId;
   /** Constructs a non-empty tab identifier. */
@@ -647,6 +654,7 @@ export interface IHerdrIds {
  * @since 0.8.2
  */
 export const herdrIds: IHerdrIds = {
+  command: Schema.decodeUnknownSync(HerdrCommandId),
   workspace: Schema.decodeUnknownSync(WorkspaceId),
   tab: Schema.decodeUnknownSync(TabId),
   pane: Schema.decodeUnknownSync(PaneId),

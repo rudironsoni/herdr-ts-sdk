@@ -6,11 +6,11 @@
  * @since 0.8.2
  */
 import { Context, Effect, Layer, Option, Schema } from "effect";
-import { type WorkspaceId } from "./herdr-domain.ts";
+import { HerdrAbsolutePath, type WorkspaceId } from "./herdr-domain.ts";
 import {
   Workspace,
-  WorkspaceCreateInput,
-  type WorkspaceCreateInputEncoded,
+  WorkspaceCreateOptions,
+  type WorkspaceCreateOptionsEncoded,
   WorkspaceCreateResult,
   WorkspaceMetadataReportInput,
   type WorkspaceMetadataReportInputEncoded,
@@ -30,7 +30,10 @@ import {
 
 const parseWorkspace = Schema.decodeUnknownEffect(Workspace);
 const parseWorkspaces = Schema.decodeUnknownEffect(Schema.Array(Workspace));
-const parseWorkspaceCreateInput = Schema.decodeEffect(WorkspaceCreateInput);
+const parseWorkspaceCreateOptions = Schema.decodeEffect(WorkspaceCreateOptions, {
+  onExcessProperty: "error",
+});
+const parseWorkspaceDirectory = Schema.decodeEffect(HerdrAbsolutePath);
 const parseWorkspaceCreateResult = Schema.decodeUnknownEffect(WorkspaceCreateResult);
 const parseWorkspaceLabel = Schema.decodeEffect(Schema.String);
 const parseWorkspaceMetadataReportInput = Schema.decodeEffect(WorkspaceMetadataReportInput);
@@ -54,7 +57,19 @@ export type WorkspaceOperationError = HerdrTransportRequestError;
 export interface IWorkspaceService {
   /** Creates a workspace and its initial tab and root pane. */
   readonly create: (
-    input?: WorkspaceCreateInputEncoded,
+    input?: WorkspaceCreateOptionsEncoded,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<WorkspaceCreateResult, WorkspaceOperationError>;
+  /** Creates a workspace in an explicit absolute directory. */
+  readonly createInDirectory: (
+    cwd: string,
+    input?: WorkspaceCreateOptionsEncoded,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<WorkspaceCreateResult, WorkspaceOperationError>;
+  /** Uses another workspace's directory policy; does not clone its layout or session. */
+  readonly createFromWorkspace: (
+    sourceWorkspaceId: WorkspaceId,
+    input?: WorkspaceCreateOptionsEncoded,
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<WorkspaceCreateResult, WorkspaceOperationError>;
   /** Lists workspaces in Herdr display order. */
@@ -143,36 +158,70 @@ export const makeWorkspaceService = Effect.gen(function* () {
       }),
   );
 
+  const createWorkspace = (
+    operation: string,
+    source:
+      | { readonly kind: "default" }
+      | { readonly kind: "directory"; readonly cwd: HerdrAbsolutePath }
+      | { readonly kind: "workspace"; readonly sourceWorkspaceId: WorkspaceId },
+    input: WorkspaceCreateOptionsEncoded,
+    options: HerdrTransportRequestOptionsEncoded,
+  ) =>
+    Effect.gen(function* () {
+      const parsed = yield* decodeHerdrInput(operation, parseWorkspaceCreateOptions, input);
+      const directory =
+        source.kind === "directory"
+          ? { cwd: source.cwd }
+          : source.kind === "workspace"
+            ? { sourceWorkspaceId: source.sourceWorkspaceId }
+            : {};
+      const response = yield* transport.request(
+        "workspace.create",
+        {
+          ...directory,
+          label: Option.getOrNull(parsed.label),
+          ...(Option.isSome(parsed.env) ? { env: parsed.env.value } : {}),
+          ...(Option.isSome(parsed.focus) ? { focus: parsed.focus.value } : {}),
+        },
+        options,
+      );
+      return yield* decodeHerdrWire(
+        parseWorkspaceCreateResult,
+        response.result,
+        response.requestId,
+      );
+    });
+
   return WorkspaceService.of({
     create: defineHerdrOperation("WorkspaceService.create", (input = {}, options = {}) =>
-      Effect.gen(function* () {
-        const parsed = yield* decodeHerdrInput(
-          "WorkspaceService.create",
-          parseWorkspaceCreateInput,
+      createWorkspace("WorkspaceService.create", { kind: "default" }, input, options),
+    ),
+    createInDirectory: defineHerdrOperation(
+      "WorkspaceService.createInDirectory",
+      (cwd, input = {}, options = {}) =>
+        Effect.gen(function* () {
+          const directory = yield* decodeHerdrInput(
+            "WorkspaceService.createInDirectory",
+            parseWorkspaceDirectory,
+            cwd,
+          );
+          return yield* createWorkspace(
+            "WorkspaceService.createInDirectory",
+            { kind: "directory", cwd: directory },
+            input,
+            options,
+          );
+        }),
+    ),
+    createFromWorkspace: defineHerdrOperation(
+      "WorkspaceService.createFromWorkspace",
+      (sourceWorkspaceId, input = {}, options = {}) =>
+        createWorkspace(
+          "WorkspaceService.createFromWorkspace",
+          { kind: "workspace", sourceWorkspaceId },
           input,
-        );
-        const parametersWithoutFocus = Option.match(parsed.env, {
-          onNone: () => ({
-            cwd: Option.getOrNull(parsed.cwd),
-            label: Option.getOrNull(parsed.label),
-          }),
-          onSome: (env) => ({
-            cwd: Option.getOrNull(parsed.cwd),
-            env,
-            label: Option.getOrNull(parsed.label),
-          }),
-        });
-        const parameters = Option.match(parsed.focus, {
-          onNone: () => parametersWithoutFocus,
-          onSome: (focus) => ({ ...parametersWithoutFocus, focus }),
-        });
-        const response = yield* transport.request("workspace.create", parameters, options);
-        return yield* decodeHerdrWire(
-          parseWorkspaceCreateResult,
-          response.result,
-          response.requestId,
-        );
-      }),
+          options,
+        ),
     ),
     list: defineHerdrOperation("WorkspaceService.list", (options = {}) =>
       Effect.gen(function* () {

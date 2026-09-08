@@ -1,6 +1,6 @@
 # Herdr SDK architecture
 
-`@rudironsoni/herdr-ts-sdk` v1 is an Effect-native client for the local Herdr protocol-21 socket API. The
+`@rudironsoni/herdr-ts-sdk` targets Herdr 0.9.0 / protocol 22, with Effect-native API-socket and client-shell endpoint clients. The
 Effect implementation under `src/` is the only supported package architecture; there is no Promise
 client or cancellation compatibility facade.
 
@@ -31,15 +31,47 @@ transport or service boundary.
 
 ## Transport and resources
 
-`HerdrTransport` is the single deep adapter for Unix-socket or Windows named-pipe acquisition, request encoding,
+`HerdrTransport` owns the ordinary API's Unix-socket or Windows named-pipe acquisition, request encoding,
 correlation, bounded newline framing, response parsing, compatibility memoization, deadlines,
 stream handshakes, and interruption-safe cleanup. Lifecycle subscriptions are live-only from server
 acceptance; cache consumers bootstrap by buffering an accepted subscription across a session snapshot.
 
 Ordinary requests own one socket through `Effect.acquireUseRelease`. Event subscriptions and pane
-graphics streams acquire sockets in the caller's `Scope.Scope`. Event reads are pull-based and
+graphics streams use scoped acquisition. Event consumption and callback-owned graphics writers hide ordinary Scope management; explicit graphics acquisition remains available for advanced composition. Event reads are pull-based and
 backpressured. Graphics writes are serialized as complete frames, and a timed-out or interrupted
 write closes and invalidates its writer because the remote frame outcome is uncertain.
+
+### Client-shell endpoint ownership
+
+[`client-shell-service.ts`](../src/client-shell-service.ts) owns lazy `withConnection`, advanced
+`connectScoped`, and cold connection-owning `projections`. Its binary socket is separate from the
+ordinary API socket; constructing the SDK opens neither. The configured API gate requires protocol
+22, while the endpoint independently negotiates generation 1 and concrete snapshot/surface/input/blob codecs.
+
+[`herdr-endpoint-transport.ts`](../src/herdr-endpoint-transport.ts) owns scoped acquisition, serialized
+bounded writes, boot-bound request correlation, response chunk assembly, and terminal failure cleanup.
+[`herdr-endpoint-codecs.ts`](../src/herdr-endpoint-codecs.ts) owns the generation-1 bincode field order;
+it does not reuse newline framing. [`herdr-client-shell-state.ts`](../src/herdr-client-shell-state.ts)
+owns exact-base patch validation and retained graphics assets for complete, coalesced scenes.
+
+A surface-interest acknowledgement establishes a projection floor, not presentation delivery. The
+service publishes active state only after a complete matching surface is available. Whole projections
+and surfaces coalesce; required response chunks never drop. Slow presentation-event consumers fail
+at a bounded backlog rather than blocking health/correlation. The endpoint never opens server-supplied
+graphics file paths and does not negotiate direct graphics. Lost or ambiguous mutations are not retried.
+
+### Public-input ergonomics
+
+Workspace creation separates default, explicit-directory, and source-workspace intent into named
+methods sharing private dispatch. Command invocation similarly separates current/workspace/tab/pane
+context; selection belongs only to the pane method. Both remove ambiguous cross-field combinations
+without requiring caller-authored `_tag` values. Graphics callbacks reuse existing scoped acquisition,
+not a second writer implementation.
+
+The baseline audit retains composable domain unions for pane destinations/swaps, layout targets,
+agent targets, plugin placements, graphics formats, filters, and events: these are data values used in
+scripted/declarative composition, not scope-owning operations. Existing exclusive-selector refinements
+remain authoritative. No deprecated workspace input alias or alternate legacy creation parser remains.
 
 ## Observability
 

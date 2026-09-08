@@ -26,14 +26,14 @@ const summary = await Effect.runPromise(program.pipe(Effect.provide(herdrSdkLaye
 
 ## Status and compatibility
 
-- SDK version: `0.8.2`
-- Herdr wire protocol: `17`, `18`, `19`, `20`, and `21`
+- SDK version: `0.9.0` (unreleased baseline)
+- Minimum Herdr release: `0.9.0`; supported wire protocol: **22 only**
 - Effect: `4.0.0-beta.105`
 - Runtime: Node.js 20 or newer on a platform supported by Herdr's local socket server
 
 The SDK verifies protocol compatibility before ordinary requests and shares that compatibility
-result across the Layer graph. A server outside protocols 17, 18, 19, 20, and 21 fails with
-`HerdrUnsupportedProtocol`.
+result across the Layer graph. A server on another protocol fails with
+`HerdrUnsupportedProtocol`; install matching Herdr and SDK releases instead of bypassing the check.
 
 `@rudironsoni/herdr-ts-sdk` is published to GitHub Packages. Point your package manager at the GitHub npm
 registry for the `@rudironsoni` scope, then install the package. GitHub Packages requires a
@@ -70,8 +70,7 @@ services; it does not proxy or duplicate their operations.
 const program = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
 
-  const created = yield* herdr.workspaces.create({
-    cwd: herdr.ids.absolutePath(process.cwd()),
+  const created = yield* herdr.workspaces.createInDirectory(process.cwd(), {
     label: "SDK demo",
     focus: true,
   });
@@ -87,7 +86,7 @@ An operation has the ordinary Effect shape `Effect.Effect<Success, Error, Requir
 - `Requirements` identifies services the caller must provide.
 - Fiber interruption owns cancellation; the API does not expose `AbortSignal`.
 
-All service methods accept `HerdrTransportRequestOptionsEncoded` as their final optional argument:
+Ordinary socket operations accept `HerdrTransportRequestOptionsEncoded` as their final optional argument. Client-shell sessions instead configure their bounded deadlines at acquisition:
 
 ```ts
 import { Duration } from "effect";
@@ -138,7 +137,7 @@ const sdkLayer = herdrSdkLayerFromOptions({
 
 const protocol = await Effect.runPromise(
   Effect.gen(function* () {
-    return (yield* HerdrSdk).config.supportedProtocols;
+    return (yield* HerdrSdk).config.supportedProtocol;
   }).pipe(Effect.provide(sdkLayer)),
 );
 ```
@@ -149,7 +148,7 @@ Configuration exports:
 | ------------------------------------- | ----------------------------------------------------------------- |
 | `HerdrRequestDeadline`                | Schema for finite, non-negative Effect durations.                 |
 | `HerdrApplication`                    | Schema for compatibility-handshake caller identity.               |
-| `HerdrProtocolVersion`                | Literal schema for protocols `17`, `18`, `19`, `20`, and `21`.    |
+| `HerdrProtocolVersion`                | Literal schema for protocol `22`.                                 |
 | `HerdrConfigOptions`                  | Schema for explicit SDK options.                                  |
 | `HerdrConfig` / `IHerdrConfig`        | Yieldable service and resolved configuration shape.               |
 | `herdrConfigRecipe`                   | Ambient Effect `Config` recipe.                                   |
@@ -202,22 +201,26 @@ identifier-constructor contract is `IHerdrIds`.
 This table spells out every direct-service symbol so callers and coding agents can find the exact
 composition entrypoint without deriving its spelling from the convention above.
 
-| Namespace     | Interface and service                         | Constructor               | Requirement-preserving Layer                  | Production Layer           |
-| ------------- | --------------------------------------------- | ------------------------- | --------------------------------------------- | -------------------------- |
-| server        | `IServerService`, `ServerService`             | `makeServerService`       | `serverServiceLayerWithoutDependencies`       | `serverServiceLayer`       |
-| session       | `ISessionService`, `SessionService`           | `makeSessionService`      | `sessionServiceLayerWithoutDependencies`      | `sessionServiceLayer`      |
-| notifications | `INotificationService`, `NotificationService` | `makeNotificationService` | `notificationServiceLayerWithoutDependencies` | `notificationServiceLayer` |
-| client        | `IClientService`, `ClientService`             | `makeClientService`       | `clientServiceLayerWithoutDependencies`       | `clientServiceLayer`       |
-| workspaces    | `IWorkspaceService`, `WorkspaceService`       | `makeWorkspaceService`    | `workspaceServiceLayerWithoutDependencies`    | `workspaceServiceLayer`    |
-| worktrees     | `IWorktreeService`, `WorktreeService`         | `makeWorktreeService`     | `worktreeServiceLayerWithoutDependencies`     | `worktreeServiceLayer`     |
-| tabs          | `ITabService`, `TabService`                   | `makeTabService`          | `tabServiceLayerWithoutDependencies`          | `tabServiceLayer`          |
-| panes         | `IPaneService`, `PaneService`                 | `makePaneService`         | `paneServiceLayerWithoutDependencies`         | `paneServiceLayer`         |
-| layouts       | `ILayoutService`, `LayoutService`             | `makeLayoutService`       | `layoutServiceLayerWithoutDependencies`       | `layoutServiceLayer`       |
-| agents        | `IAgentService`, `AgentService`               | `makeAgentService`        | `agentServiceLayerWithoutDependencies`        | `agentServiceLayer`        |
-| events        | `IEventService`, `EventService`               | `makeEventService`        | `eventServiceLayerWithoutDependencies`        | `eventServiceLayer`        |
-| integrations  | `IIntegrationService`, `IntegrationService`   | `makeIntegrationService`  | `integrationServiceLayerWithoutDependencies`  | `integrationServiceLayer`  |
-| plugins       | `IPluginService`, `PluginService`             | `makePluginService`       | `pluginServiceLayerWithoutDependencies`       | `pluginServiceLayer`       |
-| popups        | `IPopupService`, `PopupService`               | `makePopupService`        | `popupServiceLayerWithoutDependencies`        | `popupServiceLayer`        |
+| Namespace            | Interface and service                                       | Constructor                      | Requirement-preserving Layer                         | Production Layer                  |
+| -------------------- | ----------------------------------------------------------- | -------------------------------- | ---------------------------------------------------- | --------------------------------- |
+| clientShell          | `IClientShellService`, `ClientShellService`                 | `makeClientShellService`         | `clientShellServiceLayerWithoutDependencies`         | `clientShellServiceLayer`         |
+| commands             | `ICommandService`, `CommandService`                         | `makeCommandService`             | `commandServiceLayerWithoutDependencies`             | `commandServiceLayer`             |
+| productAnnouncements | `IProductAnnouncementService`, `ProductAnnouncementService` | `makeProductAnnouncementService` | `productAnnouncementServiceLayerWithoutDependencies` | `productAnnouncementServiceLayer` |
+| releaseNotes         | `IReleaseNotesService`, `ReleaseNotesService`               | `makeReleaseNotesService`        | `releaseNotesServiceLayerWithoutDependencies`        | `releaseNotesServiceLayer`        |
+| server               | `IServerService`, `ServerService`                           | `makeServerService`              | `serverServiceLayerWithoutDependencies`              | `serverServiceLayer`              |
+| session              | `ISessionService`, `SessionService`                         | `makeSessionService`             | `sessionServiceLayerWithoutDependencies`             | `sessionServiceLayer`             |
+| notifications        | `INotificationService`, `NotificationService`               | `makeNotificationService`        | `notificationServiceLayerWithoutDependencies`        | `notificationServiceLayer`        |
+| client               | `IClientService`, `ClientService`                           | `makeClientService`              | `clientServiceLayerWithoutDependencies`              | `clientServiceLayer`              |
+| workspaces           | `IWorkspaceService`, `WorkspaceService`                     | `makeWorkspaceService`           | `workspaceServiceLayerWithoutDependencies`           | `workspaceServiceLayer`           |
+| worktrees            | `IWorktreeService`, `WorktreeService`                       | `makeWorktreeService`            | `worktreeServiceLayerWithoutDependencies`            | `worktreeServiceLayer`            |
+| tabs                 | `ITabService`, `TabService`                                 | `makeTabService`                 | `tabServiceLayerWithoutDependencies`                 | `tabServiceLayer`                 |
+| panes                | `IPaneService`, `PaneService`                               | `makePaneService`                | `paneServiceLayerWithoutDependencies`                | `paneServiceLayer`                |
+| layouts              | `ILayoutService`, `LayoutService`                           | `makeLayoutService`              | `layoutServiceLayerWithoutDependencies`              | `layoutServiceLayer`              |
+| agents               | `IAgentService`, `AgentService`                             | `makeAgentService`               | `agentServiceLayerWithoutDependencies`               | `agentServiceLayer`               |
+| events               | `IEventService`, `EventService`                             | `makeEventService`               | `eventServiceLayerWithoutDependencies`               | `eventServiceLayer`               |
+| integrations         | `IIntegrationService`, `IntegrationService`                 | `makeIntegrationService`         | `integrationServiceLayerWithoutDependencies`         | `integrationServiceLayer`         |
+| plugins              | `IPluginService`, `PluginService`                           | `makePluginService`              | `pluginServiceLayerWithoutDependencies`              | `pluginServiceLayer`              |
+| popups               | `IPopupService`, `PopupService`                             | `makePopupService`               | `popupServiceLayerWithoutDependencies`               | `popupServiceLayer`               |
 
 ## Complete namespace reference
 
@@ -256,18 +259,22 @@ constructed through `herdr.ids` or returned by another SDK operation.
 
 ### `workspaces`
 
-| Operation                             | Result and behavior                                           |
-| ------------------------------------- | ------------------------------------------------------------- |
-| `create(input?, options?)`            | Atomically returns a workspace, initial tab, and root pane.   |
-| `list(options?)`                      | Lists workspaces in display order.                            |
-| `get(id, options?)`                   | Reads one workspace.                                          |
-| `focus(id, options?)`                 | Focuses and returns one workspace.                            |
-| `rename(id, label, options?)`         | Replaces a workspace label.                                   |
-| `move(id, input, options?)`           | Moves a workspace to an insertion index.                      |
-| `moveBlock(ids, input?, options?)`    | Moves a contiguous workspace block before an optional anchor. |
-| `reportMetadata(id, input, options?)` | Replaces or removes source-owned metadata tokens.             |
-| `close(id, options?)`                 | Closes one workspace.                                         |
-| `closeGroup(id, options?)`            | Closes the contiguous group containing a workspace.           |
+| Operation                                                  | Result and behavior                                                                                        |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `create(input?, options?)`                                 | Uses the server's default directory policy and atomically returns a workspace, initial tab, and root pane. |
+| `createInDirectory(cwd, input?, options?)`                 | Creates in an explicit absolute directory.                                                                 |
+| `createFromWorkspace(sourceWorkspaceId, input?, options?)` | Uses the source workspace's directory policy; does not clone its topology.                                 |
+| `list(options?)`                                           | Lists workspaces in display order.                                                                         |
+| `get(id, options?)`                                        | Reads one workspace.                                                                                       |
+| `focus(id, options?)`                                      | Focuses and returns one workspace.                                                                         |
+| `rename(id, label, options?)`                              | Replaces a workspace label.                                                                                |
+| `move(id, input, options?)`                                | Moves a workspace to an insertion index.                                                                   |
+| `moveBlock(ids, input?, options?)`                         | Moves a contiguous workspace block before an optional anchor.                                              |
+| `reportMetadata(id, input, options?)`                      | Replaces or removes source-owned metadata tokens.                                                          |
+| `close(id, options?)`                                      | Closes one workspace.                                                                                      |
+| `closeGroup(id, options?)`                                 | Closes the contiguous group containing a workspace.                                                        |
+
+Creation input is `WorkspaceCreateOptionsEncoded` (`focus`, `label`, `env`). Directory intent is selected by the method, not a public tagged union. The former `create({ cwd })` input is removed; use `createInDirectory(cwd)`.
 
 ### `worktrees`
 
@@ -295,35 +302,43 @@ caller-supplied directory.
 
 ### `panes`
 
-| Operation                                     | Result and behavior                                                   |
-| --------------------------------------------- | --------------------------------------------------------------------- |
-| `split(paneId, input, options?)`              | Splits a target or focused pane.                                      |
-| `swap(input, options?)`                       | Swaps a pane by direction or explicit identifier.                     |
-| `move(paneId, input, options?)`               | Moves a pane to a tab or new container.                               |
-| `zoom(paneId?, input?, options?)`             | Toggles or sets pane zoom.                                            |
-| `layout(paneId?, options?)`                   | Returns the containing `PaneLayoutSnapshot`.                          |
-| `processInfo(paneId?, options?)`              | Returns foreground and process-tree information.                      |
-| `neighbor(paneId, direction, options?)`       | Finds a directional neighbor.                                         |
-| `edges(paneId?, options?)`                    | Reports which layout edges contain the pane.                          |
-| `focusDirection(direction, input?, options?)` | Moves focus directionally.                                            |
-| `resize(direction, input?, options?)`         | Resizes a pane by terminal cells.                                     |
-| `list(input?, options?)`                      | Lists panes, optionally within a workspace.                           |
-| `current(input?, options?)`                   | Resolves the caller or foreground pane.                               |
-| `get(id, options?)`                           | Reads one pane.                                                       |
-| `focus(id, options?)`                         | Focuses and returns one pane.                                         |
-| `rename(id, label, options?)`                 | Replaces or clears a pane label.                                      |
-| `setInputRouting(id, input, options?)`        | Chooses whether right-click belongs to Herdr or the pane application. |
-| `sendText(id, text, options?)`                | Sends literal terminal text.                                          |
-| `sendKeys(id, keys, options?)`                | Sends named keys.                                                     |
-| `sendInput(id, input, options?)`              | Sends text and named keys as one input operation.                     |
-| `read(id, input, options?)`                   | Reads visible, recent, or recent-unwrapped output.                    |
-| `waitForOutput(id, input, options?)`          | Waits server-side for a substring or regular-expression match.        |
-| `reportAgent(id, input, options?)`            | Reports source-owned agent state.                                     |
-| `reportAgentSession(id, input, options?)`     | Attaches an upstream agent-session reference.                         |
-| `reportMetadata(id, input, options?)`         | Replaces or removes source-owned pane metadata.                       |
-| `clearAgentAuthority(id, input?, options?)`   | Clears agent-report authority, optionally by version.                 |
-| `releaseAgent(id, input, options?)`           | Releases one source-owned agent report.                               |
-| `close(id, options?)`                         | Closes one pane.                                                      |
+| Operation                                        | Result and behavior                                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `split(paneId, input, options?)`                 | Splits a target or focused pane.                                                                          |
+| `swap(input, options?)`                          | Swaps a pane by direction or explicit identifier.                                                         |
+| `move(paneId, input, options?)`                  | Moves a pane to a tab or new container.                                                                   |
+| `zoom(paneId?, input?, options?)`                | Toggles or sets pane zoom.                                                                                |
+| `layout(paneId?, options?)`                      | Returns the containing `PaneLayoutSnapshot`.                                                              |
+| `processInfo(paneId?, options?)`                 | Returns foreground and process-tree information.                                                          |
+| `neighbor(paneId, direction, options?)`          | Finds a directional neighbor.                                                                             |
+| `edges(paneId?, options?)`                       | Reports which layout edges contain the pane.                                                              |
+| `focusDirection(direction, input?, options?)`    | Moves focus directionally.                                                                                |
+| `resize(direction, input?, options?)`            | Resizes a pane by terminal cells.                                                                         |
+| `scroll(paneId, { offsetFromBottom }, options?)` | Sets scroll offset and returns pane information.                                                          |
+| `editScrollback(paneId, options?)`               | Opens the focused pane's scrollback in its configured editor.                                             |
+| `selection.read(paneId, input, options?)`        | Reads absolute-coordinate text with an optional content revision guard.                                   |
+| `copyMotion(paneId, input, options?)`            | Computes a cursor position and content revision without typing input.                                     |
+| `copySearch(paneId, input, options?)`            | Searches an exact content revision; query limit is 4096 UTF-8 bytes, match window is at most 1024 ranges. |
+| `link.activate(paneId, input, options?)`         | Resolves a visible link and invokes a matching plugin; does not open a browser.                           |
+| `list(input?, options?)`                         | Lists panes, optionally within a workspace.                                                               |
+| `current(input?, options?)`                      | Resolves the caller or foreground pane.                                                                   |
+| `get(id, options?)`                              | Reads one pane.                                                                                           |
+| `focus(id, options?)`                            | Focuses and returns one pane.                                                                             |
+| `rename(id, label, options?)`                    | Replaces or clears a pane label.                                                                          |
+| `setInputRouting(id, input, options?)`           | Chooses whether right-click belongs to Herdr or the pane application.                                     |
+| `sendText(id, text, options?)`                   | Sends literal terminal text.                                                                              |
+| `sendKeys(id, keys, options?)`                   | Sends named keys.                                                                                         |
+| `sendInput(id, input, options?)`                 | Sends text and named keys as one input operation.                                                         |
+| `read(id, input, options?)`                      | Reads visible, recent, or recent-unwrapped output.                                                        |
+| `waitForOutput(id, input, options?)`             | Waits server-side for a substring or regular-expression match.                                            |
+| `reportAgent(id, input, options?)`               | Reports source-owned agent state.                                                                         |
+| `reportAgentSession(id, input, options?)`        | Attaches an upstream agent-session reference.                                                             |
+| `reportMetadata(id, input, options?)`            | Replaces or removes source-owned pane metadata.                                                           |
+| `clearAgentAuthority(id, input?, options?)`      | Clears agent-report authority, optionally by version.                                                     |
+| `releaseAgent(id, input, options?)`              | Releases one source-owned agent report.                                                                   |
+| `close(id, options?)`                            | Closes one pane.                                                                                          |
+
+Selection/copy/link operations preserve `stale_content` and do not retry coordinates against new text. Copy search's `total` can exceed `matches.length`. Content revisions are distinct from endpoint projection and surface revisions.
 
 `reportMetadata` controls presentation, not agent lifecycle. For example:
 
@@ -351,37 +366,37 @@ const describeTask = Effect.gen(function* () {
 
 ### `panes.graphics`
 
-| Operation                                   | Result and behavior                                                                                      |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `info(paneId, options?)`                    | Returns cell dimensions, visibility, formats, direct-file transport, layer limits, and mouse capability. |
-| `set(paneId, frame, options?)`              | Replaces one graphics layer with an inline PNG, RGB, RGBA, or BGRA frame.                                |
-| `clear(paneId, options?)`                   | Clears every graphics layer for the pane.                                                                |
-| `clearLayer(paneId, input?, options?)`      | Clears one named layer or the primary layer.                                                             |
-| `openStream(paneId, options?)`              | Acquires a scope-owned multi-frame `PaneGraphicsWriter`.                                                 |
-| `openLayerStream(paneId, input?, options?)` | Acquires a writer for one stable layer and z-index.                                                      |
+| Operation                                       | Result and behavior                                                                                      |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `info(paneId, options?)`                        | Returns cell dimensions, visibility, formats, direct-file transport, layer limits, and mouse capability. |
+| `set(paneId, frame, options?)`                  | Replaces one graphics layer with an inline PNG, RGB, RGBA, or BGRA frame.                                |
+| `clear(paneId, options?)`                       | Clears every graphics layer for the pane.                                                                |
+| `clearLayer(paneId, input?, options?)`          | Clears one named layer or the primary layer.                                                             |
+| `withStream(paneId, use, options?)`             | Owns a graphics writer for the callback, closing on every exit path.                                     |
+| `withLayerStream(paneId, input, use, options?)` | Owns a named-layer writer for the callback.                                                              |
+| `openStream(paneId, options?)`                  | Advanced scope-owned acquisition for resource composition.                                               |
+| `openLayerStream(paneId, input?, options?)`     | Acquires a writer for one stable layer and z-index.                                                      |
 
 `PaneGraphicsWriter.write` sends inline frames. `writeFile` submits immutable direct-file RGBA or
 BGRA frames and returns `PaneGraphicsFrameAcknowledgement`. Writers have no manual `close`; their
 socket belongs to the acquisition scope.
 
 ```ts
-const draw = Effect.scoped(
-  Effect.gen(function* () {
-    const herdr = yield* HerdrSdk;
-    const pane = yield* herdr.panes.current();
-    const writer = yield* herdr.panes.graphics.openLayerStream(pane.id, {
-      layerId: "status",
-      zIndex: 10,
-    });
-
-    yield* writer.write({
-      format: "rgba",
-      imageWidth: 1,
-      imageHeight: 1,
-      data: Uint8Array.of(34, 197, 94, 255),
-    });
-  }),
-);
+const draw = Effect.gen(function* () {
+  const herdr = yield* HerdrSdk;
+  const pane = yield* herdr.panes.current();
+  yield* herdr.panes.graphics.withLayerStream(
+    pane.id,
+    { layerId: "status", zIndex: 10 },
+    (writer) =>
+      writer.write({
+        format: "rgba",
+        imageWidth: 1,
+        imageHeight: 1,
+        data: Uint8Array.of(34, 197, 94, 255),
+      }),
+  );
+});
 ```
 
 One-shot inline writes are limited to 512 KiB; streamed inline frames are limited to 16 MiB.
@@ -428,6 +443,8 @@ encoded inputs still accept ordinary numbers and Effect durations. When manually
 parsed values, use `HerdrSplitRatio.make(0.5)` or `HerdrRequestDeadline.make(Duration.seconds(5))`
 instead of assigning an unchecked scalar.
 
+Protocol-22 prompt success acknowledges ordered text and Enter writes, not a new turn. A non-working prompt with `wait` requires observed working/blocked activity before a settled state can satisfy it; the server can return `agent_prompt_stalled`. Timeouts/stalls do not prove non-delivery. The SDK neither duplicates this state machine nor retries prompts. API seen state and each TUI client's Done badge may differ.
+
 ### `agents.view`
 
 | Operation                 | Result and behavior                                                                                      |
@@ -467,10 +484,11 @@ One-shot waits follow the same rule. Interrupting the consumer releases the sock
 
 ### `integrations`
 
-| Operation                     | Result and behavior                                                    |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| `install(target, options?)`   | Installs a built-in `codex`, `qwen`, or `antigravity_cli` integration. |
-| `uninstall(target, options?)` | Removes a built-in integration.                                        |
+| Operation                     | Result and behavior                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| `list(options?)`              | Returns executable availability and `notInstalled`, `current`, or `outdated` installation state. |
+| `install(target, options?)`   | Installs a built-in `codex`, `qwen`, or `antigravity_cli` integration.                           |
+| `uninstall(target, options?)` | Removes a built-in integration.                                                                  |
 
 ### `plugins`
 
@@ -499,6 +517,58 @@ Nested plugin capabilities:
 | ----------------- | ----------------------------------- |
 | `close(options?)` | Closes the active foreground popup. |
 
+### Commands and endpoint notices
+
+- `commands.invoke(commandId, options?)`: uses current server context.
+- `commands.invokeInWorkspace(commandId, workspaceId, options?)`.
+- `commands.invokeInTab(commandId, tabId, input?, options?)`: optional `expectedWorkspaceId`.
+- `commands.invokeInPane(commandId, paneId, input?, options?)`: optional parent assertions and `selection`; the selection's pane ID is derived, not duplicated.
+- `productAnnouncements.dismiss({ version, id }, options?)`.
+- `releaseNotes.dismiss({ version }, options?)`.
+
+Command IDs are opaque endpoint-issued identities, not shell text. All target methods share the `command.invoke` wire API. Stale identities and server failures remain errors, without retries.
+
+### `clientShell`
+
+`withConnection(input, use)` owns the endpoint session for an Effect callback; callback success, failure, interruption, or terminal connection failure closes its resources. `connectScoped(input)` is the advanced explicit-Scope form. `projections(input)` is a cold, inactive connection-owning stream; each consumption opens its own connection.
+
+```ts
+const inspectShell = Effect.gen(function* () {
+  const herdr = yield* HerdrSdk;
+  return yield* herdr.clientShell.withConnection(
+    {
+      surface: { columns: 100, rows: 30 },
+      cellPixels: { width: 8, height: 16 },
+    },
+    (shell) =>
+      Effect.gen(function* () {
+        const snapshot = yield* shell.snapshot();
+        yield* shell.surface.set({ active: true });
+        const surface = yield* shell.surface.awaitReady();
+        return { workspaceCount: snapshot.workspaces.length, cells: surface.frame.cells.length };
+      }),
+  );
+});
+```
+
+The connection uses generation-1 binary framing on **`herdr-client.sock`**, not newline-delimited API JSON. Its default path is alongside the configured API socket; an explicit session input `socketPath` overrides the client endpoint. The configured API socket must refer to the same server for the protocol-22 check. On Windows, endpoint paths use the same named-pipe translation as ordinary transport.
+
+Connection input also accepts `initialSurface` (`inactive` by default), `mouseCapture`, `endpointKeybindings`, `timeoutMs` (10 seconds), `healthIntervalMs` (10 seconds), and `maximumMessageBytes` (32 MiB maximum/default). Surface and cell dimensions are explicit; the SDK does not inspect or resize the developer's terminal.
+
+Connection operations:
+
+- `snapshot()`, `projections`: current metadata and coalesced replacement projections.
+- `surface.set({ active })`, `surface.state()`, `surface.states`, `surface.awaitReady()`, `surface.resize(input)`.
+- `input.paste(paneId, { text })`, `input.text(paneId, { text })`, `input.key(paneId, input)`, `input.mouse(paneId, input)`; explicit popup-terminal variants are `pasteInPopup`, `textInPopup`, `keyInPopup`, `mouseInPopup`.
+- `commands.invoke` / `invokeInWorkspace` / `invokeInTab` / `invokeInPane`: same target intent as socket commands, but the first argument is a discovered `ClientShellCommand` from this connection's snapshot.
+- `productAnnouncements.dismiss(input)`, `releaseNotes.dismiss(input)`.
+- `setFocused(boolean)`, `setMouseCapture(boolean)`, `connectionState()`, `awaitClosed()`.
+- `events`: live semantic notifications and host presentation instructions; the SDK does not execute clipboard, graphics escapes, sound, or window-title effects itself.
+
+`client_shell.surface.set` is connection-local. An activation ACK establishes a projection floor, not delivered presentation; wait for `surface.awaitReady()` separately. Patches require an exact base and are applied before publishing complete surfaces. Graphics asset bytes are retained for coalesced scenes. `direct_graphics` is deliberately not negotiated: server-supplied graphics file paths are never opened. This SDK is an endpoint client, not a host TUI renderer or saved-SSH-machine manager.
+
+Projection/state streams coalesce whole replacements. Presentation events are live-only with an eight-message backlog; overflow fails the connection rather than silently dropping effects or blocking health traffic. At most 32 requests are pending; each frame and the aggregate buffered response bytes are bounded by `maximumMessageBytes`, with at most 4096 chunks per response. Ambiguous endpoint write/request timeouts invalidate the connection; server rejections and missing advertised methods do not. No mutation is automatically retried. Handles and connection-bound streams must be used inside the owning callback/Scope; escaped handles fail after closure.
+
 ### `ids`
 
 `ids` is the root namespace for the exported `herdrIds` value. It is pure schema-owned data, not an
@@ -506,6 +576,7 @@ Effect service, and provides synchronous constructors that reject invalid values
 
 | Constructor           | Result              |
 | --------------------- | ------------------- |
+| `command(value)`      | `HerdrCommandId`    |
 | `workspace(value)`    | `WorkspaceId`       |
 | `tab(value)`          | `TabId`             |
 | `pane(value)`         | `PaneId`            |
@@ -530,6 +601,8 @@ Public data is schema-owned. A schema value such as `Workspace` also owns the co
 `Workspace` TypeScript type. Operation inputs additionally expose `...Encoded` interfaces when the
 ergonomic caller representation differs from the normalized type.
 
+Protocol-22 interaction models are exported from `herdr-pane-interaction-models.ts`; endpoint projection, surface, lifecycle, and graphics schemas from `herdr-client-shell-models.ts`; semantic key/mouse inputs from `herdr-client-shell-input.ts`. Connection input and ownership interfaces belong to `client-shell-service.ts`. All are re-exported by `@rudironsoni/herdr-ts-sdk`; generated wire contracts remain private.
+
 ### Domain primitives
 
 `HerdrEnvironment`, `HerdrMetadataTokens`, `HerdrMetadataTokenPatch`, `HerdrKeySequence`,
@@ -548,7 +621,7 @@ ergonomic caller representation differs from the normalized type.
 
 ### Workspace, server, notification, integration, worktree, and tab operations
 
-`WorkspaceCreateInput`, `WorkspaceCreateResult`, `WorkspaceMetadataReportInput`,
+`WorkspaceCreateOptions`, `WorkspaceCreateResult`, `WorkspaceMetadataReportInput`,
 `WorkspaceMoveInput`, `WorkspaceMoveBlockInput`, `ServerLiveHandoffInput`, `NotificationShowInput`,
 `IntegrationTarget`, `IntegrationChangeResult`, `WorktreeSourceInfo`, `Worktree`,
 `WorktreeListResult`, `WorktreeCreateResult`, `WorktreeOpenResult`, `WorktreeRemoveResult`,
@@ -595,7 +668,7 @@ ergonomic caller representation differs from the normalized type.
 
 Encoded interfaces describe the exact caller representation accepted before schema normalization:
 
-`WorkspaceCreateInputEncoded`, `WorkspaceMetadataReportInputEncoded`,
+`WorkspaceCreateOptionsEncoded`, `WorkspaceMetadataReportInputEncoded`,
 `WorkspaceMoveInputEncoded`, `WorkspaceMoveBlockInputEncoded`, `ServerLiveHandoffInputEncoded`,
 `NotificationShowInputEncoded`, `WorktreeListInputEncoded`, `WorktreeCreateInputEncoded`,
 `WorktreeOpenInputEncoded`, `WorktreeRemoveInputEncoded`, `TabCreateInputEncoded`,
@@ -627,7 +700,7 @@ Expected failures remain values in the Effect error channel and are recoverable 
 | `HerdrTransportError`       | Unix-socket connect, read, write, or premature-close failure.                 |
 | `HerdrRequestTimeout`       | A local SDK deadline elapsed; the server outcome may be uncertain.            |
 | `HerdrInvalidResponse`      | Malformed, oversized, mismatched, missing, or schema-invalid server response. |
-| `HerdrUnsupportedProtocol`  | Server protocol is outside 17, 18, 19, 20, and 21.                            |
+| `HerdrUnsupportedProtocol`  | Server and SDK protocol versions differ.                                      |
 | `HerdrUnsupportedResult`    | An operation returned an unsupported success discriminant.                    |
 | `HerdrUnsupportedEvent`     | A stream or wait received an unsupported event discriminant.                  |
 | `HerdrServerError`          | The server rejected a request with an open-code error response.               |
@@ -646,11 +719,13 @@ const resilientPing = herdr.server
   .pipe(
     Effect.catchTag("HerdrUnsupportedProtocol", (error) =>
       Effect.logError(
-        `Herdr protocol ${error.actualProtocol} is incompatible with ${error.supportedProtocols.join(", ")}`,
+        `Herdr protocol ${error.actualProtocol} is incompatible with ${error.supportedProtocol}`,
       ),
     ),
   );
 ```
+
+Endpoint failures are separate typed errors: `HerdrEndpointNegotiationError`, `HerdrEndpointTransportError`, `HerdrEndpointRequestTimeout`, `HerdrEndpointClosed`, `HerdrEndpointUnsupportedMethod`, `HerdrEndpointStaleReference`, and `HerdrEndpointInvalidMessage`. Diagnostics classify the phase/reason without retaining frame bodies. `HerdrEndpointConnectError` and `ClientShellOperationError` are error unions, not wrapping classes.
 
 ## Advanced transport API
 
