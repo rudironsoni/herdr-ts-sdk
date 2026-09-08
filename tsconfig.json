@@ -24,5 +24,5 @@
     "skipLibCheck": true
   },
   "include": ["scripts/**/*.ts", "scripts/**/*.mjs", "src/**/*.ts", "vite.config.ts"],
-  "exclude": ["dist", "node_modules", "repos"]
+  "exclude": ["dist", "node_modules", "repos", "scripts/herdr-probe"]
 }

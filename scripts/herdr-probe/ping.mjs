@@ -15,6 +15,24 @@ if (!Number.isInteger(expectedProtocol)) {
   process.exit(1);
 }
 
+/**
+ * @param {unknown} error
+ * @returns {error is {
+ *   _tag: "HerdrUnsupportedProtocol";
+ *   actualProtocol: number;
+ *   supportedProtocol: number;
+ * }}
+ */
+const isUnsupportedProtocol = (error) =>
+  typeof error === "object" &&
+  error !== null &&
+  "_tag" in error &&
+  error._tag === "HerdrUnsupportedProtocol" &&
+  "actualProtocol" in error &&
+  "supportedProtocol" in error &&
+  typeof error.actualProtocol === "number" &&
+  typeof error.supportedProtocol === "number";
+
 const ping = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   return yield* herdr.server.ping();
@@ -33,14 +51,13 @@ try {
     process.exit(1);
   }
 } catch (error) {
-  const failure =
-    error && typeof error === "object" && "_tag" in error
-      ? {
-          _tag: error._tag,
-          actualProtocol: error.actualProtocol,
-          supportedProtocol: error.supportedProtocol,
-        }
-      : { _tag: "unknown", message: String(error) };
+  const failure = isUnsupportedProtocol(error)
+    ? {
+        _tag: error._tag,
+        actualProtocol: error.actualProtocol,
+        supportedProtocol: error.supportedProtocol,
+      }
+    : { _tag: "unknown", message: String(error) };
   console.log(JSON.stringify(failure));
   if (!expectFailure) {
     console.error(`expected protocol ${expectedProtocol} success`);
