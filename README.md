@@ -26,7 +26,7 @@ const summary = await Effect.runPromise(program.pipe(Effect.provide(herdrSdkLaye
 
 ## Status and compatibility
 
-- SDK version: `0.9.0` (unreleased baseline)
+- SDK version: `0.10.0`
 - Minimum Herdr release: `0.9.0`; supported wire protocol: **22 only**
 - Effect: `4.0.0-beta.105`
 - Runtime: Node.js 20 or newer on a platform supported by Herdr's local socket server
