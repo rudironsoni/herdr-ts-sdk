@@ -1,4 +1,4 @@
-# `@rudironsoni/sdk`
+# `@rudironsoni/herdr-ts-sdk`
 
 Effect-native TypeScript access to Herdr's local Unix-socket API.
 
@@ -9,7 +9,7 @@ precise errors, dependencies, and interruption.
 
 ```ts
 import { Effect } from "effect";
-import { HerdrSdk, herdrSdkLayer } from "@rudironsoni/sdk";
+import { HerdrSdk, herdrSdkLayer } from "@rudironsoni/herdr-ts-sdk";
 
 const program = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
@@ -35,7 +35,7 @@ The SDK verifies protocol compatibility before ordinary requests and shares that
 result across the Layer graph. A server outside protocols 17, 18, 19, 20, and 21 fails with
 `HerdrUnsupportedProtocol`.
 
-`@rudironsoni/sdk` is published to GitHub Packages. Point your package manager at the GitHub npm
+`@rudironsoni/herdr-ts-sdk` is published to GitHub Packages. Point your package manager at the GitHub npm
 registry for the `@rudironsoni` scope, then install the package. GitHub Packages requires a
 personal access token with the `read:packages` scope for installs, even for public repositories:
 
@@ -46,7 +46,7 @@ personal access token with the `read:packages` scope for installs, even for publ
 ```
 
 ```sh
-pnpm install @rudironsoni/sdk
+pnpm install @rudironsoni/herdr-ts-sdk
 ```
 
 Alternatively, build and pack this repository directly:
@@ -59,7 +59,7 @@ pnpm run build
 pnpm pack
 ```
 
-Then install the generated tarball in the consuming project and import from `@rudironsoni/sdk`.
+Then install the generated tarball in the consuming project and import from `@rudironsoni/herdr-ts-sdk`.
 
 ## API shape
 
@@ -128,7 +128,7 @@ Use explicit options when an application owns SDK configuration:
 
 ```ts
 import { Effect, Duration } from "effect";
-import { HerdrSdk, herdrSdkLayerFromOptions } from "@rudironsoni/sdk";
+import { HerdrSdk, herdrSdkLayerFromOptions } from "@rudironsoni/herdr-ts-sdk";
 
 const sdkLayer = herdrSdkLayerFromOptions({
   session: "work",
@@ -172,7 +172,7 @@ Advanced applications can depend on one service directly:
 
 ```ts
 import { Effect } from "effect";
-import { WorkspaceService, workspaceServiceLayer } from "@rudironsoni/sdk";
+import { WorkspaceService, workspaceServiceLayer } from "@rudironsoni/herdr-ts-sdk";
 
 const labels = Effect.gen(function* () {
   const workspaces = yield* WorkspaceService;
@@ -446,7 +446,7 @@ Literal subscription tuples narrow the emitted event union:
 
 ```ts
 import { Effect, Stream } from "effect";
-import { HerdrSdk } from "@rudironsoni/sdk";
+import { HerdrSdk } from "@rudironsoni/herdr-ts-sdk";
 
 const monitor = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;

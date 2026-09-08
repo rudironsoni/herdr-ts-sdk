@@ -1,6 +1,6 @@
 import { NodeRuntime } from "@effect/platform-node-shared";
 import { Effect } from "effect";
-import { type HerdrSdk, herdrSdkLayer } from "@rudironsoni/sdk";
+import { type HerdrSdk, herdrSdkLayer } from "@rudironsoni/herdr-ts-sdk";
 
 /**
  * Runs one Herdr example with ambient configuration and signal-safe finalization.

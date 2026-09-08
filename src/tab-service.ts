@@ -87,7 +87,7 @@ export interface ITabService {
  * @since 0.8.2
  */
 export class TabService extends Context.Service<TabService, ITabService>()(
-  "@rudironsoni/sdk/TabService",
+  "@rudironsoni/herdr-ts-sdk/TabService",
 ) {}
 
 /**

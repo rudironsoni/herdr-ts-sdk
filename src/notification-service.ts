@@ -46,7 +46,7 @@ export interface INotificationService {
 export class NotificationService extends Context.Service<
   NotificationService,
   INotificationService
->()("@rudironsoni/sdk/NotificationService") {}
+>()("@rudironsoni/herdr-ts-sdk/NotificationService") {}
 
 /**
  * Constructs notification operations while preserving the shared transport requirement.

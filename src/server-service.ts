@@ -78,7 +78,7 @@ export interface IServerService {
  * @since 0.8.2
  */
 export class ServerService extends Context.Service<ServerService, IServerService>()(
-  "@rudironsoni/sdk/ServerService",
+  "@rudironsoni/herdr-ts-sdk/ServerService",
 ) {}
 
 /**

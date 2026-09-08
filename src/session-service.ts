@@ -38,7 +38,7 @@ export interface ISessionService {
  * @since 0.8.2
  */
 export class SessionService extends Context.Service<SessionService, ISessionService>()(
-  "@rudironsoni/sdk/SessionService",
+  "@rudironsoni/herdr-ts-sdk/SessionService",
 ) {}
 
 /**

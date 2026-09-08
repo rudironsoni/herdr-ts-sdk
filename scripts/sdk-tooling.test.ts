@@ -20,8 +20,10 @@ import {
   verificationNodeLayer,
   type VerificationCommandOptions,
 } from "./sdk-verification-process.mjs";
+import packageJson from "../package.json" with { type: "json" };
 
 const repositoryDirectory = fileURLToPath(new URL("../", import.meta.url));
+const publishedPackageName = packageJson.name;
 const vpEntrypoint = fileURLToPath(import.meta.resolve("vite-plus/bin"));
 const tscEntrypoint = join(
   dirname(fileURLToPath(import.meta.resolve("typescript/package.json"))),
@@ -412,7 +414,7 @@ describe("published package", () => {
           const fs = yield* FileSystem.FileSystem;
           const fixture = yield* SdkToolingFixture;
           const directory = join(fixture.directory, "consumer");
-          const installedPackage = join(directory, "node_modules/@herdr/sdk");
+          const installedPackage = join(directory, "node_modules", publishedPackageName);
           yield* fs.makeDirectory(installedPackage, { recursive: true });
           yield* fs.copy(join(fixture.packageDirectory, "dist"), join(installedPackage, "dist"));
           yield* fs.copy(
@@ -428,7 +430,7 @@ describe("published package", () => {
           yield* fs.writeFileString(join(directory, "package.json"), '{"type":"module"}');
           yield* fs.writeFileString(
             join(directory, "consumer.mjs"),
-            'import { HerdrSdk, herdrSdkLayer, WorkspaceId } from "@herdr/sdk";\nif (!HerdrSdk || !herdrSdkLayer || !WorkspaceId) throw new Error("Missing public runtime exports");\n',
+            `import { HerdrSdk, herdrSdkLayer, WorkspaceId } from "${publishedPackageName}";\nif (!HerdrSdk || !herdrSdkLayer || !WorkspaceId) throw new Error("Missing public runtime exports");\n`,
           );
           const runtime = yield* runToolingCommand(process.execPath, ["consumer.mjs"], {
             cwd: directory,
@@ -456,8 +458,8 @@ describe("published package", () => {
                 : `import { ${missingEffectImports.join(", ")} } from "effect";`,
               sdkImports.length === 0
                 ? ""
-                : `import { ${sdkImports.join(", ")} } from "@herdr/sdk";`,
-              'import type { IHerdrSdk } from "@herdr/sdk";',
+                : `import { ${sdkImports.join(", ")} } from "${publishedPackageName}";`,
+              `import type { IHerdrSdk } from "${publishedPackageName}";`,
               "declare const herdr: IHerdrSdk;",
               /\bconst program\b/.test(body)
                 ? ""

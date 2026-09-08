@@ -55,7 +55,7 @@ export interface IClientService {
  * @since 0.8.2
  */
 export class ClientService extends Context.Service<ClientService, IClientService>()(
-  "@rudironsoni/sdk/ClientService",
+  "@rudironsoni/herdr-ts-sdk/ClientService",
 ) {}
 
 /**

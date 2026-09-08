@@ -1,5 +1,5 @@
 import { Duration, Effect } from "effect";
-import { HerdrSdk } from "@rudironsoni/sdk";
+import { HerdrSdk } from "@rudironsoni/herdr-ts-sdk";
 import { runHerdrExample } from "./example-runtime.ts";
 
 const agentCodeReview = Effect.gen(function* () {
