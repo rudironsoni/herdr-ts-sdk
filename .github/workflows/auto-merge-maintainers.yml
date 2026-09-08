@@ -1,0 +1,96 @@
+name: Auto-merge maintainers
+
+# Runs from the default branch. Approves GITHUB_TOKEN pull_request runs
+# (Release Please and other Actions-opened PRs wait at action_required)
+# and queues squash auto-merge for same-repo maintainer PRs.
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - SDK verification
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  approve-and-queue:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve waiting runs and queue auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          pr_json="$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open --json number,author,isDraft,isCrossRepository)"
+          pr_count="$(printf '%s' "$pr_json" | jq 'length')"
+          if [ "$pr_count" != "1" ]; then
+            echo "skip: expected 1 open PR for $HEAD_BRANCH, found $pr_count"
+            exit 0
+          fi
+
+          number="$(printf '%s' "$pr_json" | jq -r '.[0].number')"
+          author="$(printf '%s' "$pr_json" | jq -r '.[0].author.login')"
+          draft="$(printf '%s' "$pr_json" | jq -r '.[0].isDraft')"
+          fork="$(printf '%s' "$pr_json" | jq -r '.[0].isCrossRepository')"
+
+          if [ "$draft" = "true" ]; then
+            echo "skip: PR $number is a draft"
+            exit 0
+          fi
+          if [ "$fork" = "true" ]; then
+            echo "skip: PR $number is from a fork"
+            exit 0
+          fi
+
+          trusted=0
+          case "$author" in
+            "github-actions[bot]"|"app/github-actions")
+              trusted=1
+              ;;
+            *)
+              perm="$(gh api "repos/${REPO}/collaborators/${author}/permission" --jq .permission || true)"
+              case "$perm" in
+                admin|maintain|write)
+                  trusted=1
+                  ;;
+              esac
+              ;;
+          esac
+
+          if [ "$trusted" != "1" ]; then
+            echo "skip: $author is not a maintainer"
+            exit 0
+          fi
+
+          if [ "$CONCLUSION" = "action_required" ]; then
+            gh api --method POST "repos/${REPO}/actions/runs/${RUN_ID}/approve" >/dev/null
+            echo "approved waiting run ${RUN_ID}"
+          fi
+
+          pending="$(gh api "repos/${REPO}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request" --jq '.workflow_runs[] | select(.conclusion=="action_required") | .id')"
+          for id in $pending; do
+            gh api --method POST "repos/${REPO}/actions/runs/${id}/approve" >/dev/null
+            echo "approved waiting run ${id}"
+          done
+
+          if gh pr merge "$number" --repo "$REPO" --squash --auto; then
+            echo "queued auto-merge for PR $number"
+          else
+            echo "could not queue auto-merge for PR $number"
+            exit 0
+          fi
