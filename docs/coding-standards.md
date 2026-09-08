@@ -165,8 +165,7 @@ Test behavior through `HerdrSdk` or the owning service interface against isolate
 fixtures. Replace dependencies with complete, behaviorally faithful service or Layer
 implementations that cross the same interface as production. Do not replace project modules with
 module mocks or use partial mocks that weaken production behavior. Tests must not use ambient
-sessions, personal panes, or a developer socket. Real-Herdr integration remains a separately
-selected, disposable-session workflow; examples are not verification.
+sessions, personal panes, or a developer socket; live examples are not verification.
 
 Add focused tests for application-owned transformations, normalization, compatibility, framing,
 resource cleanup, interruption, and previously regressed boundaries. Straightforward schema brands
@@ -200,5 +199,5 @@ wire spellings inside adapters and avoid generic names that hide the owning doma
 
 Use [agent workflow](agent-workflow.md#verification-commands) for command selection. For a focused
 documentation change, check formatting, local links, and the scoped diff without running live
-examples or real-Herdr workflows. Broader verification is evidence only for the stages it actually
+examples. Broader verification is evidence only for the stages it actually
 runs; report exact commands, outcomes, and checks not run.

@@ -7,8 +7,7 @@ belongs to the [parity ledger](sdk-v1-parity.md).
 ## Find the owner and its verification
 
 Paths below are relative to this document. Start with the smallest row that matches the change,
-then follow its imports and callers. Normal runtime tests exercise local fixtures, not live Herdr;
-real-Herdr evidence integration is separately opt-in and owns a fresh disposable session.
+then follow its imports and callers. Runtime tests exercise isolated local fixtures, not live Herdr.
 
 | Task                                                 | Implementation / contract                                                                                                        | Focused verification                                                                                                                |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,28 +104,6 @@ Use explicit local socket paths and bounded fixture waits. Synchronize tests on 
 acceptance, writes, or close events rather than sleep-based timing guesses. Failure diagnostics
 must be bounded metadata, never request/response bodies, terminal text, environment values, or
 absolute paths. Do not add production logging just to debug a fixture.
-
-## Evidence for review and handoff
-
-Use [local evidence](local-evidence.md) when a change needs an explanatory demonstration or
-trace-linked review. `pnpm run evidence --help` describes production and inspection commands;
-the [evidence CLI](../scripts/sdk-evidence.mjs) is the no-bootstrap entrypoint.
-Keep generated bundles outside the checkout and preserve their independent outcome fields.
-`run herdr-sdk-workflow --record` explicitly launches a fresh isolated Herdr session and records
-actual SDK-driven UI changes. Fixture recipes remain separately labeled; their post-run result
-pages do not establish live UI behavior. Neither mode proves more than its named checks and
-recorded observations.
-
-The [live runner](../scripts/sdk-live-evidence-runner.mjs) composes the
-[owned sandbox](../scripts/sdk-herdr-sandbox.mjs), [SDK workflow](../src/herdr-live-evidence.ts),
-[subprocess bridge](../scripts/sdk-live-evidence.mjs), and
-[terminal recorder](../scripts/sdk-terminal-control.mjs). Never add an ambient socket/session
-fallback or use an existing personal session for integration verification.
-
-In a handoff, provide the bundle directory and the specific check or chapter to inspect, along
-with limitations and the reproduction command. Do not replace test results with a video, or
-assume another agent can reach a localhost viewer. Portable snapshots remain evidence of their
-recorded source revision/fingerprint; rerunning newer code creates new evidence.
 
 ## Subagent task contract
 

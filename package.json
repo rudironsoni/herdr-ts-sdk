@@ -36,7 +36,6 @@
     "check:generated": "node scripts/sdk-verify.mjs generated",
     "check:package": "node scripts/check-package.mjs",
     "lab": "node scripts/sdk-lab.mjs",
-    "evidence": "node scripts/sdk-evidence.mjs",
     "trace:viewer": "node scripts/sdk-trace-viewer.mjs",
     "trace:list": "node scripts/sdk-trace-query.mjs list",
     "trace:show": "node scripts/sdk-trace-query.mjs show",

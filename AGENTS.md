@@ -29,18 +29,11 @@ constructor exports; do not turn a focused change into an API migration. Read
 - Import installed packages, never vendored source. [repos/effect](repos/effect/) is read-only:
   inspect its own guidance and matching source/tests before guessing an Effect API. Installed
   exports/declarations are authoritative when vendored examples target a different API revision.
-- Normal tests use isolated local fixtures through public SDK/service interfaces, never ambient
-  sessions, personal panes, or a developer's socket. The explicitly selected real-Herdr evidence
-  workflow may launch its own disposable session with private configuration and an exact owned
-  socket. Real-Herdr integration tests remain opt-in; they must never attach to an existing session.
+- Tests use isolated local fixtures through public SDK/service interfaces, never ambient
+  sessions, personal panes, or a developer's socket.
 - For opt-in fixture/test/verification traces, follow [local tracing](docs/local-tracing.md).
   Keep product outcome separate from export acknowledgement and viewer ingestion; never assume
   missing or truncated spans prove success. Do not start or clear a shared viewer implicitly.
-- For reviewable fixture or isolated real-Herdr demonstrations, follow [local evidence](docs/local-evidence.md).
-  Keep checks, telemetry delivery, viewer observation, recording, rendering, and cleanup separate.
-  Label fixture presentations separately from recordings of actual SDK-driven Herdr UI changes.
-  Evidence is opt-in and stored outside the checkout; recordings include input as well as output.
-  Use only owned disposable sessions and review artifacts before sharing; never upload automatically.
 - Do not run live examples as verification. Consult [example safety notes](examples/README.md).
 - Do not install dependencies, rewrite generated files, format/fix the whole repository, commit,
   or modify unrelated work unless the task explicitly authorizes it.

@@ -311,6 +311,30 @@ caller-supplied directory.
 | `releaseAgent(id, input, options?)`           | Releases one source-owned agent report.                               |
 | `close(id, options?)`                         | Closes one pane.                                                      |
 
+`reportMetadata` controls presentation, not agent lifecycle. For example:
+
+```ts
+const describeTask = Effect.gen(function* () {
+  const herdr = yield* HerdrSdk;
+  const pane = yield* herdr.panes.current();
+  yield* herdr.panes.reportMetadata(pane.id, {
+    source: "my-tool",
+    title: "Fix login tests",
+    stateLabels: { working: "Running tests", blocked: "Needs review" },
+    tokens: { model: "my-model", ticket: "APP-123", oldToken: null },
+  });
+});
+```
+
+- `stateLabels` accepts any subset of `idle`, `working`, `blocked`, `done`, and `unknown`.
+  Unknown keys fail rather than being silently removed.
+- Ordinary reports replace that source's title, displayed agent name, and label table;
+  omitted previous presentation fields do not survive. Explicit clear operations are separate.
+- Tokens update individually; `null` removes a token. A pane or workspace token patch accepts
+  at most 16 entries, with names matching `^[A-Za-z0-9_-]{1,32}$`.
+- Use `reportAgent` for lifecycle state consumed by waits and notifications. Custom tokens such
+  as `$model` need corresponding sidebar configuration to appear there.
+
 ### `panes.graphics`
 
 | Operation                                   | Result and behavior                                                                                      |
@@ -371,6 +395,25 @@ One-shot inline writes are limited to 512 KiB; streamed inline frames are limite
 | `prompt(target, input, options?)`  | Sends a prompt with an optional server-owned wait policy.      |
 | `wait(target, input?, options?)`   | Waits for requested lifecycle states.                          |
 
+Agent targets accept an explicit `kind` and exactly one selector:
+
+```ts
+const byPane = { kind: "pane", paneId: "pane-1" } as const;
+const byName = { kind: "agent", name: "worker" } as const;
+```
+
+Existing `{ paneId: "pane-1" }` and `{ name: "worker" }` calls still work; parsing supplies
+`kind`. Supplying both selectors, or a `kind` that disagrees with its selector, fails in types
+and at runtime—even if one selector is invalid. `kind` is SDK-only; wire requests still send
+one `target`. Layout targets likewise select either a tab or pane, and pane swaps select either
+a direction or a source/target pane pair.
+
+`HerdrJsonValue` accepts JSON values only: nonfinite numbers and class instances such as `Date`
+are rejected. Parsed layout ratios and request deadlines retain their validated types;
+encoded inputs still accept ordinary numbers and Effect durations. When manually constructing
+parsed values, use `HerdrSplitRatio.make(0.5)` or `HerdrRequestDeadline.make(Duration.seconds(5))`
+instead of assigning an unchecked scalar.
+
 ### `agents.view`
 
 | Operation                 | Result and behavior                                                                                      |
@@ -404,8 +447,9 @@ const monitor = Effect.gen(function* () {
 });
 ```
 
-Subscriptions are live-only rather than replay streams. Interrupting the consumer releases the
-socket.
+Subscriptions are live-only rather than replay streams. Each execution captures its selection
+when parsing begins; later caller mutation cannot change that execution's request or event filter.
+One-shot waits follow the same rule. Interrupting the consumer releases the socket.
 
 ### `integrations`
 
@@ -643,23 +687,11 @@ adds generated drift, runtime suites, and an isolated package consumer. See the
 `pnpm run lab --list` for fixture-only executable learning recipes. For opt-in OpenTelemetry
 export, a loopback viewer, and agent-readable trace queries, follow
 [local tracing](docs/local-tracing.md). No SDK import starts telemetry or a viewer.
-For human-readable review pages, agent-readable evidence bundles, and opt-in terminal recordings,
-follow [local evidence](docs/local-evidence.md). The primary real-Herdr demonstration records
-actual SDK-driven tab/pane changes in a fresh disposable Herdr session:
-
-```sh
-node scripts/sdk-evidence.mjs run herdr-sdk-workflow --record
-```
-
-Selecting this scenario explicitly launches an isolated real session, never a developer's existing
-session. The installed binary must match the SDK protocol; use `--herdr-executable /absolute/path/to/herdr`
-to select a compatible binary without changing your normal installation. Fixture demonstrations
-remain available and are labeled separately.
 
 A globally managed `pnpm` launcher may bootstrap dependencies. For strict no-bootstrap checks,
 use `node scripts/sdk-doctor.mjs` and `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
 
-Normal tests never use live Herdr control; disposable real-Herdr integration is opt-in.
+Tests use isolated local fixtures, never live Herdr control.
 Runtime tests do not check `.tst.ts` inference contracts;
 those require typechecking. Live [examples](examples/README.md) have explicit side effects and
 are not verification commands.
