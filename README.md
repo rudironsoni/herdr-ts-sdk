@@ -687,23 +687,11 @@ adds generated drift, runtime suites, and an isolated package consumer. See the
 `pnpm run lab --list` for fixture-only executable learning recipes. For opt-in OpenTelemetry
 export, a loopback viewer, and agent-readable trace queries, follow
 [local tracing](docs/local-tracing.md). No SDK import starts telemetry or a viewer.
-For human-readable review pages, agent-readable evidence bundles, and opt-in terminal recordings,
-follow [local evidence](docs/local-evidence.md). The primary real-Herdr demonstration records
-actual SDK-driven tab/pane changes in a fresh disposable Herdr session:
-
-```sh
-node scripts/sdk-evidence.mjs run herdr-sdk-workflow --record
-```
-
-Selecting this scenario explicitly launches an isolated real session, never a developer's existing
-session. The installed binary must match the SDK protocol; use `--herdr-executable /absolute/path/to/herdr`
-to select a compatible binary without changing your normal installation. Fixture demonstrations
-remain available and are labeled separately.
 
 A globally managed `pnpm` launcher may bootstrap dependencies. For strict no-bootstrap checks,
 use `node scripts/sdk-doctor.mjs` and `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
 
-Normal tests never use live Herdr control; disposable real-Herdr integration is opt-in.
+Tests use isolated local fixtures, never live Herdr control.
 Runtime tests do not check `.tst.ts` inference contracts;
 those require typechecking. Live [examples](examples/README.md) have explicit side effects and
 are not verification commands.

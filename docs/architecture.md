@@ -59,8 +59,6 @@ requirements. The operation and cross-cutting coverage inventory is recorded in
 successes, not exhaustive lifecycle confidence. Framing, interruption, deadlines, stream acceptance,
 and cleanup require the named focused suites and deterministic local fixture synchronization.
 Normal tests must never connect to live Herdr control or select a developer's ambient session.
-The opt-in [real-Herdr evidence workflow](local-evidence.md) is a separate integration boundary:
-it launches a private disposable session and uses only that session's explicitly owned socket.
 
 For task-to-owner navigation, executable learning routes, safe verification, and the subagent
 handoff contract, load [`agent-workflow.md`](agent-workflow.md). The canonical agent entrypoint is
